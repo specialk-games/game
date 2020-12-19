@@ -1,20 +1,40 @@
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const http = require("http");
 const app = express();
-const port = process.env.PORT || 3001;
+const server = http.createServer(app);
+const io = require("socket.io")(server, {
+    cors: {
+      origin: "http://localhost:3003",
+      methods: ["GET", "POST"],
+      allowedHeaders: ["my-custom-header"],
+      credentials: true
+    }
+  });
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+const port = process.env.PORT || 4001;
+const index = require("./routes/index");
 
-app.get('/api/hello', (req, res) => {
-  res.send({ express: 'Hello From Express' });
+app.use(index);
+
+
+let interval;
+
+io.on("connection", (socket) => {
+  console.log("New client connected");
+  if (interval) {
+    clearInterval(interval);
+  }
+  interval = setInterval(() => getApiAndEmit(socket), 1000);
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
+    clearInterval(interval);
+  });
 });
 
-app.post('/api/dice', (req, res) => {
-  console.log(req.body);
-  res.send(
-    (Math.floor(Math.random() * 6)+1).toString()
-    );
-});
+const getApiAndEmit = socket => {
+  const response = new Date();
+  // Emitting a new message. Will be consumed by the client
+  socket.emit("FromAPI", response);
+};
 
-app.listen(port, () => console.log(`Listening on port ${port}`));
+server.listen(port, () => console.log(`Listening on port ${port}`));

@@ -1,69 +1,22 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from "react";
+import socketIOClient from "socket.io-client";
+const ENDPOINT = "http://localhost:4001";
 
-import logo from './logo.svg';
+function App() {
+  const [response, setResponse] = useState("");
 
-import './App.css';
-
-class App extends Component {
-  state = {
-    response: '',
-    post: '',
-    responseToPost: '',
-  };
-  
-  componentDidMount() {
-    this.callApi()
-      .then(res => this.setState({ response: res.express }))
-      .catch(err => console.log(err));
-  }
-  
-  callApi = async () => {
-    const response = await fetch('/api/hello');
-    const body = await response.json();
-    if (response.status !== 200) throw Error(body.message);
-    
-    return body;
-  };
-  
-  handleSubmit = async e => {
-    e.preventDefault();
-    const response = await fetch('/api/dice', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}),
+  useEffect(() => {
+    const socket = socketIOClient(ENDPOINT);
+    socket.on("FromAPI", data => {
+      setResponse(data);
     });
-    const body = await response.text();
-    
-    this.setState({ responseToPost: body });
-  };
+  }, []);
 
-  rollDice = async e => {
-    e.preventDefault();
-    const response = await fetch('/api/dice', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}),
-    });
-    const body = await response.text();
-    
-    this.setState({ responseToPost: body });
-  };
-  
-render() {
-    return (
-      <div className="App">
-        <p>{this.state.response}</p>
-        <button onClick={this.rollDice}>
-        Roll
-        </button>
-        <p>{this.state.responseToPost}</p>
-      </div>
-    );
-  }
+  return (
+    <p>
+      It's <time dateTime={response}>{response}</time>
+    </p>
+  );
 }
 
 export default App;
